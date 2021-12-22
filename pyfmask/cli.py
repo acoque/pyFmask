@@ -29,6 +29,7 @@ config = load_config()
 
 
 @click.group()
+@click.version_option()
 def cli():
     """A user-friendly python CLI for Fmask 4.3 software (GERS Lab, UCONN).
     
