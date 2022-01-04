@@ -14,6 +14,7 @@
 
 """The main module of pyFmask, where the CLI is defined."""
 
+import functools
 import shutil
 import subprocess
 import tempfile
@@ -31,7 +32,7 @@ config = load_config()
 @click.group()
 @click.version_option()
 def cli():
-    """A user-friendly python CLI for Fmask 4.3 software (GERS Lab, UCONN).
+    """A user-friendly python CLI for Fmask 4.x software (GERS Lab, UCONN).
     
     Fmask (Zhu et al., 2015; Qiu et al., 2017) is used for automated clouds,
     cloud shadow, snow, and water masking for Landsats 4-8 and Sentinel-2
@@ -62,7 +63,10 @@ def _worker(cmd_list, path, out_dir=None, n=0):
     # Move cloud mask if asked
     if out_dir is not None:
         click.echo(f'{prefix}move cloud mask to {out_dir}')
-        shutil.move(str(list(path.glob('**/*Fmask4.tif'))[0]), str(out_dir))
+        mask_path = list(path.glob('**/*Fmask4.tif'))[0]
+        shutil.move(str(mask_path), str(out_dir))
+        if mask_path.parent.name == 'FMASK_DATA':
+            shutil.rmtree(str(mask_path.parent))
     # Clean up the temporary directory (if exists)
     if 'tmp_dir' in locals():
         if out_dir is None:
@@ -73,20 +77,28 @@ def _worker(cmd_list, path, out_dir=None, n=0):
         tmp_dir.cleanup()
 
 
+def common_options(func):
+    @click.option('--cpt', type=click.FLOAT,
+                  help=('cloud probability threshold for creating potential '
+                        'cloud layer  [default: 10.0% for Landsats 4-7, 17.5% '
+                        'for Landsat 8, and 20.0% for Sentinel-2]'))
+    @click.option('--cloud', type=click.INT, default='3',
+                  help='number of dilated pixels for cloud')
+    @click.option('--cloud_shadow', type=click.INT, default=3,
+                  help='number of dilated pixels for cloud shadow')
+    @click.option('--snow', type=click.INT, default=0,
+                  help='number of dilated pixels for snow')
+    @click.option('--out_dir', '-o', help='')
+    @click.option('--num_cpus', type=click.INT,
+                  help='the maximum number of central processing units used')
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+
 @cli.command(context_settings=dict(show_default=True))
-@click.option('--cpt', type=click.FLOAT,
-              help=('cloud probability threshold for creating potential cloud '
-                    'layer  [default: 10.0% for Landsats 4-7, 17.5% for '
-                    'Landsat 8, and 20.0% for Sentinel-2]'))
-@click.option('--cloud', type=click.INT, default='3',
-              help='number of dilated pixels for cloud')
-@click.option('--cloud_shadow', type=click.INT, default=3,
-              help='number of dilated pixels for cloud shadow')
-@click.option('--snow', type=click.INT, default=0,
-              help='number of dilated pixels for snow')
-@click.option('--out_dir', '-o', help='')
-@click.option('--num_cpus', type=click.INT,
-              help='the maximum number of central processing units used')
+@common_options
 @click.argument('image_path', nargs=-1, required=True,
                 type=PathPath(exists=True, resolve_path=True))
 def process(cpt, cloud, cloud_shadow, snow, out_dir, num_cpus, image_path):
@@ -109,6 +121,36 @@ def process(cpt, cloud, cloud_shadow, snow, out_dir, num_cpus, image_path):
     else:
         for cmd, path, out_dir in zip(lst_cmd, lst_path, lst_outdir):
             _worker(cmd, path, out_dir)
+
+
+@cli.command(context_settings=dict(show_default=True))
+@common_options
+@click.argument('dir_path', required=True,
+                type=PathPath(exists=True, file_okay=False, resolve_path=True))
+@click.pass_context
+def process_fromdir(ctx, cpt, cloud, cloud_shadow, snow, out_dir, num_cpus,
+                    dir_path):
+    """Apply Fmask to all the images located in the given directory."""
+    image_paths = tuple(dir_path.glob('*'))
+    ctx.invoke(process, cpt=cpt, cloud=cloud, cloud_shadow=cloud_shadow,
+               snow=snow, out_dir=out_dir, num_cpus=num_cpus,
+               image_path=image_paths)
+
+
+@cli.command(context_settings=dict(show_default=True))
+@common_options
+@click.argument('file_path', required=True,
+                type=PathPath(exists=True, resolve_path=True))
+@click.pass_context
+def process_fromfile(ctx, cpt, cloud, cloud_shadow, snow, out_dir, num_cpus,
+                     file_path):
+    """Apply Fmask to the images listed in the input file."""
+    with open(file_path) as f:
+        image_paths = [path for p in f.readlines()
+                       if (path := Path(p.strip())).exists()]
+    ctx.invoke(process, cpt=cpt, cloud=cloud, cloud_shadow=cloud_shadow,
+               snow=snow, out_dir=out_dir, num_cpus=num_cpus,
+               image_path=image_paths)
 
 
 @cli.command()

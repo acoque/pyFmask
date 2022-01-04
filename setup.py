@@ -22,7 +22,7 @@ def readme():
 
 setup(
     name='pyFmask',
-    version='0.1.1',
+    version='0.2.0',
     description='A user-friendly python CLI for Fmask 4.3 software (GERS Lab, UCONN).',
     long_description=readme(),
     url='https://github.com/acoque/pyFmask',

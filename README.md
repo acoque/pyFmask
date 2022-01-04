@@ -2,7 +2,7 @@
 
 ## What is pyFmask
 
-`pyFmask` is a user-friendly python CLI for Fmask 4.3 software (GERS Lab,
+`pyFmask` is a user-friendly python CLI for Fmask 4.x software (GERS Lab,
 UCONN; https://github.com/GERSL/Fmask).
 
 Fmask ([Zhu et al., 2015](https://doi.org/10.1016/j.rse.2014.12.014);
@@ -13,7 +13,8 @@ Sentinel-2 images.
 ## Requirements
 
 You will need Python 3.8 and Fmask 4.3 to run `pyFmask`. You can have multiple
-Python versions (2.x and 3.x) installed on the same system without any problems.
+Python versions (2.x and 3.x) installed on the same system without any
+problems.
 
 ## Installation
 
@@ -28,5 +29,14 @@ $ python -m pip install git+https://github.com/acoque/pyFmask.git@main
 You can use `pyFmask` through its CLI:
 
 ```shell
-$ pyFmask process <image_path>
+$ pyFmask process <image_path> [<image2_path> <image3_path>]
+```
+
+You can also use the two following commands for processing i) all the images
+located in the given directory or ii) the images listed in an input file
+(one path per line):
+
+```shell
+$ pyFmask process-fromdir <directory_path>
+$ pyFmask process-fromfile <file_path>
 ```
