@@ -103,7 +103,7 @@ def common_options(func):
                 type=PathPath(exists=True, resolve_path=True))
 def process(cpt, cloud, cloud_shadow, snow, out_dir, num_cpus, image_path):
     """Apply Fmask to the input image(s)."""
-    cmd_list = [config['fmask_dir'], config['mr_dir'], str(cloud),
+    cmd_list = [config['fmask_exec'], config['mr_dir'], str(cloud),
                 str(cloud_shadow), str(snow)]
     if cpt is not None:
         cmd_list.append(str(cpt))
@@ -140,7 +140,7 @@ def process_fromdir(ctx, cpt, cloud, cloud_shadow, snow, out_dir, num_cpus,
 @cli.command(context_settings=dict(show_default=True))
 @common_options
 @click.argument('file_path', required=True,
-                type=PathPath(exists=True, resolve_path=True))
+                type=PathPath(exists=True, dir_okay=False, resolve_path=True))
 @click.pass_context
 def process_fromfile(ctx, cpt, cloud, cloud_shadow, snow, out_dir, num_cpus,
                      file_path):
@@ -154,16 +154,16 @@ def process_fromfile(ctx, cpt, cloud, cloud_shadow, snow, out_dir, num_cpus,
 
 
 @cli.command()
-@click.argument('fmask_dir', nargs=1, required=False,
-                type=click.Path(exists=True, file_okay=False, resolve_path=True))
-def update_fmask_dir(fmask_dir):
-    """Change the default value of FMASK_DIR.
+@click.argument('fmask_exec', nargs=1, required=False,
+                type=click.Path(exists=True, dir_okay=False, resolve_path=True))
+def update_fmask_exec(fmask_exec):
+    """Change the default value of FMASK_EXEC.
     
-    FMASK_DIR is the path to the Fmask application.
+    FMASK_EXEC is the path to the Fmask application.
     """
-    if fmask_dir is not None:
-        update_config(config, 'fmask_dir', fmask_dir)
-    click.echo(f'fmask_dir: {config["fmask_dir"]}')
+    if fmask_exec is not None:
+        update_config(config, 'fmask_exec', fmask_exec)
+    click.echo(f'fmask_exec: {config["fmask_exec"]}')
 
 
 @cli.command()
